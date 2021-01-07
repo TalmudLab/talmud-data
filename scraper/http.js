@@ -1,4 +1,4 @@
-const request = require('request');
+import request from "request";
 
 function get(uri) {
   return new Promise(function(resolve, reject) {
@@ -13,4 +13,4 @@ function get(uri) {
   })
 }
 
-module.exports = { get }
+export { get };

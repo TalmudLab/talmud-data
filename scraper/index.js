@@ -1,13 +1,14 @@
-const cheerio = require('cheerio');
+import cheerio from "cheerio";
 
-const tractates = require("./tractates");
-const httpGet = require("./http").get;
-const divideMain = require("./match-sefaria").divideMain;
+
+import tractates from "./tractates.js";
+import { get } from "./http.js";
+import { divideMain } from "./match-sefaria.js";
 
 const uri = (mesechta, daf) => `https://hebrewbooks.org/shas.aspx?mesechta=${mesechta}&daf=${daf}&format=text`;
 
 async function loadPage(tractateIndex, daf) {
-  const body = await httpGet(uri(tractateIndex, daf));
+  const body = await get(uri(tractateIndex, daf));
   if (body) {
     if (body.includes("Requested Page not found")) {
       throw "Invalid daf";

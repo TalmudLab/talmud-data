@@ -38,5 +38,4 @@ const tractates = [
   "Nidah"
 ]
 
-module.exports = tractates;
-
+export default tractates;
