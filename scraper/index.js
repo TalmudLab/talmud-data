@@ -1,9 +1,7 @@
 import cheerio from "cheerio";
-
-
 import tractates from "./tractates.js";
 import { get } from "./http.js";
-import { divideMain } from "./match-sefaria.js";
+import { mergeMain } from "./match-sefaria.js";
 
 const uri = (mesechta, daf) => `https://hebrewbooks.org/shas.aspx?mesechta=${mesechta}&daf=${daf}&format=text`;
 
@@ -29,7 +27,7 @@ function incrementDaf (dafString) {
 }
 
 async function* tractatePages(tractateIndex) {
-  let daf = '13b';
+  let daf = '2';
   let body;
   do {
     try {
@@ -58,15 +56,31 @@ function linesArray(html) {
   return lines;
 }
 
+
 function processPage(page) {
   const $ = cheerio.load(page.body);
+
+  $(".shastext2").find("span").replaceWith(function () {
+    let inner = $(this).text();
+    if (inner[0] == '\n') {
+      inner = '\n[' + inner;
+    } else {
+      inner = '[' + inner;
+    }
+    if (inner[inner.length - 1] == '\n') {
+      inner = inner + ']\n';
+    } else {
+      inner = inner + ']';
+    }
+
+    return inner;
+  })
 
   const mainLines = linesArray($('.shastext2').html());
   const rashiLines = linesArray($(".shastext3").html());
   const tosafotLines = linesArray($(".shastext4").html());
   console.log(mainLines.length, rashiLines.length, tosafotLines.length);
-  const mainText = mainLines.join("\n");
-  divideMain(page.tractate, page.daf, mainText).then();
+  mergeMain(page.tractate, page.daf, mainLines).then();
 }
 
 tractatePages(1).next().then(page => processPage(page.value));
