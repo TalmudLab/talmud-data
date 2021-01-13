@@ -60,27 +60,28 @@ function linesArray(html) {
 function processPage(page) {
   const $ = cheerio.load(page.body);
 
+  // const replaceSpans = divSelector =>
+  //   $(divSelector).find(span)
   $(".shastext2").find("span").replaceWith(function () {
     let inner = $(this).text();
+    let newlineStart = false;
+    let newlineEnd = false;
     if (inner[0] == '\n') {
-      inner = '\n[' + inner;
-    } else {
-      inner = '[' + inner;
+      newlineStart = true;
     }
     if (inner[inner.length - 1] == '\n') {
-      inner = inner + ']\n';
-    } else {
-      inner = inner + ']';
+      newlineEnd = true;
     }
 
-    return inner;
+    return  `${newlineStart ? '\n' : ''}[${inner.replaceAll('\n', '')}]${newlineEnd ? '\n' : ''}`;
   })
 
   const mainLines = linesArray($('.shastext2').html());
   const rashiLines = linesArray($(".shastext3").html());
   const tosafotLines = linesArray($(".shastext4").html());
+  console.log(mainLines);
   console.log(mainLines.length, rashiLines.length, tosafotLines.length);
-  mergeMain(page.tractate, page.daf, mainLines).then();
+  mergeMain(page.tractate, page.daf, mainLines).then( ({merged}) => console.log(merged));
 }
 
 tractatePages(1).next().then(page => processPage(page.value));
