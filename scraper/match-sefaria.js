@@ -1,6 +1,7 @@
 import { get as httpGet } from "./http.js"
 import * as Diff from "diff"
 import exceptions from "../exceptions/index.js";
+import colors from "colors";
 
 const textURI = (tractate, daf, type) => {
   switch (type) {
@@ -22,32 +23,145 @@ async function getText(tractate, daf, type) {
 
 const lineSep = '<br>';
 const sentenceSep = '|';
+const processHebrew = string => string
+  .replace(/<[^>]*>/g, "")
+  .replaceAll("–", "")
+  .replaceAll("׳", "'")
+// .replace(/\([^\(\)]+\)/g, '')––
 
-function merge(sefariaLines, hbLines) {
-  const processHebrew = string => string
-    .replace(/<[^>]*>/g, "")
-    .replaceAll("–", "")
-    .replaceAll("׳", "'")
-    // .replace(/\([^\(\)]+\)/g, '')––
-
-  const sefariaString = processHebrew(sefariaLines.join(sentenceSep));
-  const diff = Diff.diffChars(sefariaString, hbLines.join(lineSep));
+function diffsToString(diffs) {
   let merged = "";
-  diff.forEach((part) => {
+  diffs.forEach((part) => {
     if (part.removed) {
       if (part.value.includes(sentenceSep))
-        merged += sentenceSep;
+        merged += sentenceSep
+      else {
+        if (part.value.trim())
+          console.warn(`Removed ${part.value} from Sefaria`.blue)
+      }
     } else if (part.added) {
+      let add = "";
       if (part.value.includes ("]"))
-        merged += "] ";
+        add += "] ";
       if (part.value.includes(lineSep))
-        merged += lineSep;
+        add += lineSep;
       if (part.value.includes("["))
-        merged += "[";
+        add += "[";
+      merged += add;
+      if (!add && part.value.trim()) {
+        console.warn(`Removed ${part.value} from Hebrew Books`)
+      }
     } else {
       merged += part.value;
     }
   });
+  return merged;
+}
+
+function mergeCommentary(sefariaLines, hbLines) {
+  const hbString = hbLines.join(lineSep)
+    .replace(/\]\[/g, "")
+    .replace(/\]\s+\[/g, " ")
+    .replaceAll("[ ", " [")
+    .replaceAll(" ]", "] ")
+    .replaceAll(" :", ":")
+  let hbIndex = 0;
+  const merged = [];
+  sefariaLines.forEach((line, index) =>
+    {
+      process.stdout.write(`Comment #${index + 1} `.green );
+      const split = line.split(/[-–—]/g).map(str => str.trim());
+      if (split.length != 2) {
+        throw new Error("Expected one dash to delineate comment header; found " + split.length - 1);
+      }
+      split[0] += ".";
+      const currMerged = [];
+      split.forEach( (header, index) => {
+        process.stdout.write(["Header ", "Comment "][index])
+        let adjustReach = 0;
+        if (hbIndex != 0) {
+          // there's either a space or a line break between each block
+          if (hbString[hbIndex] == " ") {
+            hbIndex++;
+            // adjustReach = 1;
+          } else if (hbString.substr(hbIndex, lineSep.length) == lineSep) {
+            adjustReach = 1;
+          } else {
+            throw new Error("Unexpected comment divisor")
+          }
+        }
+        let lineSepCount = 0;
+        let headerLength = header.length + adjustReach;
+        if (index == 0) {
+          headerLength += 2; //account for starting and ending brackets
+          //Sefaria never has the "gemara" label at their first comment on the gemara, so account for that
+          const gemaraLabel = "[גמ' "
+          if (hbString.substr(hbIndex, gemaraLabel.length) == gemaraLabel)
+            headerLength += gemaraLabel.length;
+        }
+        let hbHeader = hbString.slice(hbIndex, hbIndex + headerLength);
+        let count = (hbHeader.match(new RegExp(lineSep, 'g')) || []).length;
+        while (count != lineSepCount) {
+          headerLength += (count - lineSepCount) * (lineSep.length - 1);
+          hbHeader = hbString.slice(hbIndex, hbIndex + headerLength)
+          lineSepCount = count;
+          count = (hbHeader.match(new RegExp(lineSep, 'g')) || []).length;
+        }
+        let lastChar = hbHeader[hbHeader.length - 1];
+        const desiredLastChar = index == 0 ? ']' : ':';
+        const negativeLookAhead = "(?!\\))"
+        if (lastChar != desiredLastChar) {
+          const regex = new RegExp(desiredLastChar + negativeLookAhead, "g")
+          const index = hbHeader.search(regex);
+          if (index != -1) {
+            const adjust = (hbHeader.length - 1 - index)
+            headerLength -= adjust;
+            console.log ("moved back " + adjust);
+            hbHeader = hbString.slice(hbIndex, hbIndex + headerLength);
+            lastChar = hbHeader[hbHeader.length - 1];
+          } else {
+            console.log ("last char not in string")
+          }
+        } else {
+          process.stdout.write("looking good!")
+        }
+        if (index == 0) {
+          process.stdout.write("; ")
+          if (lastChar != "]")
+            throw new Error(`Header ended in '${lastChar}' rather than '['`)
+        } else if (index == 1) {
+          console.log();
+          if (lastChar != ":")
+            throw new Error(`Comment ended in '${lastChar}' rather than ':'`)
+        }
+        const headerDiff = Diff.diffChars(header, hbHeader);
+        const changes = headerDiff.filter(diff => diff.added || diff.removed)
+        // const unexpectedChange = changes.find(change => change.value.length > Math.max(lineSep.length, sentenceSep.length));
+        // if (unexpectedChange) {
+        //   if (unexpectedChange.removed) {
+        //     console.warn(`Removed ${unexpectedChange.value} from Sefaria`);
+        //   } else {
+        //     console.warn(`Removed ${unexpectedChange.value} from Hebrew Books`)
+        //   }
+        // }
+        const merged = diffsToString(Diff.diffChars(header, hbHeader));
+        currMerged.push(merged);
+        hbIndex += headerLength;
+
+      })
+      merged.push(currMerged);
+    }
+  )
+  console.log(merged);
+
+
+}
+function merge(sefariaLines, hbLines) {
+
+  const sefariaString = processHebrew(sefariaLines.join(sentenceSep));
+  const diffs = Diff.diffChars(sefariaString, hbLines.join(lineSep));
+  let merged = diffsToString(diffs);
+
   const issues = verifyMerged(merged, sefariaLines.map(processHebrew), hbLines);
   return {
     merged,
@@ -100,7 +214,7 @@ function checkForException(tractate, daf, text, sefariaLines, hbLines) {
 async function mergeText(tractate, daf, text, hbLines) {
   const {hebrew} = await getText(tractate, daf, text);
   const { sefaria, hb } = checkForException(tractate, daf, text, hebrew, hbLines)
-  return merge(sefaria, hb);
+  return text == "main" ? merge(sefaria, hb) : mergeCommentary(sefaria, hb);
 }
 //Leave these as three separate functions for now
 async function mergeMain(tractate, daf, mainLines) {

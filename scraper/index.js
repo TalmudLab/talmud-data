@@ -88,10 +88,10 @@ async function processPage(page) {
   const rashiLines = linesArray($(".shastext3").html());
   const tosafotLines = linesArray($(".shastext4").html());
   console.log(mainLines.length, rashiLines.length, tosafotLines.length);
-  const main = await mergeMain(page.tractate, page.daf, mainLines);
+  // const main = await mergeMain(page.tractate, page.daf, mainLines);
   let tosafot, rashi;
-  if (tosafotLines.length)
-    tosafot = await mergeTosafot(page.tractate, page.daf, tosafotLines);
+  // if (tosafotLines.length)
+  //   tosafot = await mergeTosafot(page.tractate, page.daf, tosafotLines);
   if (rashiLines.length)
     rashi = await mergeRashi(page.tractate, page.daf, rashiLines);
   const output = {
