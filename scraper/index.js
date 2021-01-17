@@ -1,7 +1,8 @@
 import cheerio from "cheerio";
 import tractates from "./tractates.js";
 import { get } from "./http.js";
-import { mergeMain } from "./match-sefaria.js";
+import { mergeMain, mergeTosafot, mergeRashi } from "./match-sefaria.js";
+import { writeFile } from "fs/promises";
 
 const uri = (mesechta, daf) => `https://hebrewbooks.org/shas.aspx?mesechta=${mesechta}&daf=${daf}&format=text`;
 
@@ -26,8 +27,8 @@ function incrementDaf (dafString) {
   return num + 'b';
 }
 
-async function* tractatePages(tractateIndex) {
-  let daf = '2';
+async function* tractatePages(tractateIndex, startDaf = '2') {
+  let daf = startDaf;
   let body;
   do {
     try {
@@ -57,38 +58,56 @@ function linesArray(html) {
 }
 
 
-function processPage(page) {
+async function processPage(page) {
   const $ = cheerio.load(page.body);
 
-  // const replaceSpans = divSelector =>
-  //   $(divSelector).find(span)
-  $(".shastext2").find("span").replaceWith(function () {
-    let inner = $(this).text();
-    let newlineStart = false;
-    let newlineEnd = false;
-    if (inner[0] == '\n') {
-      newlineStart = true;
-    }
-    if (inner[inner.length - 1] == '\n') {
-      newlineEnd = true;
-    }
+  const replaceSpans = divSelector => {
+    $(divSelector).find("span").replaceWith(function () {
+      let inner = $(this).text();
+      if ($(this).hasClass("mareimakom")) return inner;
+      let newlineStart = false;
+      let newlineEnd = false;
+      if (inner[0] == '\n') {
+        inner = inner.slice(1);
+        newlineStart = true;
+      }
+      if (inner[inner.length - 1] == '\n') {
+        inner = inner.slice(0, -1);
+        newlineEnd = true;
+      }
 
-    return  `${newlineStart ? '\n' : ''}[${inner.replaceAll('\n', '')}]${newlineEnd ? '\n' : ''}`;
-  })
+      return  `${newlineStart ? '\n' : ''}[${inner}]${newlineEnd ? '\n' : ''}`;
+    })
+    $(divSelector).find("div").replaceWith ( function () {
+      return $(this).text();
+    })
+  }
 
+  [".shastext2", ".shastext3", ".shastext4"].forEach(replaceSpans);
   const mainLines = linesArray($('.shastext2').html());
   const rashiLines = linesArray($(".shastext3").html());
   const tosafotLines = linesArray($(".shastext4").html());
-  console.log(mainLines);
   console.log(mainLines.length, rashiLines.length, tosafotLines.length);
-  mergeMain(page.tractate, page.daf, mainLines).then( ({merged}) => console.log(merged));
+  const main = await mergeMain(page.tractate, page.daf, mainLines);
+  let tosafot, rashi;
+  if (tosafotLines.length)
+    tosafot = await mergeTosafot(page.tractate, page.daf, tosafotLines);
+  if (rashiLines.length)
+    rashi = await mergeRashi(page.tractate, page.daf, rashiLines);
+  const output = JSON.stringify({
+    main,
+    ...rashi && {rashi},
+    ...tosafot && {tosafot},
+  })
+  return output;
 }
 
-tractatePages(1).next().then(page => processPage(page.value));
-// (async () => {
-//   for await (const page of tractatePages(4)) {
-//     console.log(page.tractate, page.daf);
-//     processPage(page);
-//   }
-// })();
+// tractatePages(1, '2').next().then(page => processPage(page.value));
+(async () => {
+  for await (const page of tractatePages(1)) {
+    console.log(page.tractate, page.daf);
+    const output = await processPage(page);
+    await writeFile(`../output/${page.tractate}-${page.daf}.json`, output)
+  }
+})();
 //

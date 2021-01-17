@@ -1,16 +1,20 @@
 import { get as httpGet } from "./http.js"
 import * as Diff from "diff"
 
-async function getMain(tractate, daf) {
-  const mainURI = 'https://www.sefaria.org/api/texts/' + tractate + '.' + daf + '?vhe=Wikisource_Talmud_Bavli';
-  // rashiURI = 'https://www.sefaria.org/api/texts/Rashi_on_' + tractate + '.' + daf + '.1-100' + '?',
-  // tosafotURI = 'https://www.sefaria.org/api/texts/Tosafot_on_' + tractate + '.' + daf + '.1-100' + '?';
-  const body = await httpGet(mainURI);
+const textURI = (tractate, daf, type) => {
+  switch (type) {
+    case "main": return 'https://www.sefaria.org/api/texts/' + tractate + '.' + daf + '?vhe=Wikisource_Talmud_Bavli';
+    case "rashi": return 'https://www.sefaria.org/api/texts/Rashi_on_' + tractate + '.' + daf + '.1-100' + '?';
+    case "tosafot": return 'https://www.sefaria.org/api/texts/Tosafot_on_' + tractate + '.' + daf + '.1-100' + '?';
+  }
+}
+async function getText(tractate, daf, type) {
+  const body = await httpGet(textURI(tractate, daf, type));
   if (body) {
     const obj = JSON.parse(body);
     return {
       english: obj.text,
-      hebrew: obj.he
+      hebrew: obj.he.filter(arr => arr.length).flat().filter(str => str.length),
     }
   };
 }
@@ -18,15 +22,14 @@ async function getMain(tractate, daf) {
 const lineSep = '<br>';
 const sentenceSep = '|';
 
-async function mergeMain(tractate, daf, mainLines) {
-  console.log(tractate, daf);
-  const {hebrew} = await getMain(tractate, daf);
+function merge(sefariaLines, hbLines) {
   const processHebrew = string => string
     .replace(/<[^>]*>/g, "")
-    .replace(/\([^\(\)]+\)/g, '')
     .replaceAll("׳", "'")
-  const hebrewString = processHebrew(hebrew.join(sentenceSep));
-  const diff = Diff.diffChars(hebrewString, mainLines.join(lineSep));
+    // .replace(/\([^\(\)]+\)/g, '')
+
+  const sefariaString = processHebrew(sefariaLines.join(sentenceSep));
+  const diff = Diff.diffChars(sefariaString, hbLines.join(lineSep));
   let merged = "";
   diff.forEach((part) => {
     if (part.removed) {
@@ -43,13 +46,12 @@ async function mergeMain(tractate, daf, mainLines) {
       merged += part.value;
     }
   });
-  const issues = verifyMerged(merged, hebrew.map(processHebrew), mainLines);
+  const issues = verifyMerged(merged, sefariaLines.map(processHebrew), hbLines);
   return {
     merged,
     issues
   };
 }
-
 
 function compareTextArrays (splitArr, originalArr) {
   const diffs = [];
@@ -83,4 +85,22 @@ function verifyMerged (merged, sefariaArray, hbArray) {
     hb: hbDiffs
   }
 }
-export { mergeMain }
+
+async function mergeMain(tractate, daf, mainLines) {
+  const {hebrew} = await getText(tractate, daf, "main");
+  console.log(tractate, daf, "Main");
+  return merge(hebrew, mainLines);
+}
+
+async function mergeRashi(tractate, daf, rashiLines) {
+  const {hebrew} = await getText(tractate, daf, "rashi");
+  console.log(tractate, daf, "Rashi");
+  return merge(hebrew, rashiLines);
+}
+
+async function mergeTosafot(tractate, daf, tosafotLines) {
+  const {hebrew} = await getText(tractate, daf, "tosafot");
+  console.log(tractate, daf, "Tosafot");
+  return merge(hebrew, tosafotLines);
+}
+export { mergeMain, mergeRashi, mergeTosafot }
