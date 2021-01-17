@@ -1,5 +1,6 @@
 import { get as httpGet } from "./http.js"
 import * as Diff from "diff"
+import exceptions from "../exceptions/index.js";
 
 const textURI = (tractate, daf, type) => {
   switch (type) {
@@ -25,8 +26,9 @@ const sentenceSep = '|';
 function merge(sefariaLines, hbLines) {
   const processHebrew = string => string
     .replace(/<[^>]*>/g, "")
+    .replaceAll("–", "")
     .replaceAll("׳", "'")
-    // .replace(/\([^\(\)]+\)/g, '')
+    // .replace(/\([^\(\)]+\)/g, '')––
 
   const sefariaString = processHebrew(sefariaLines.join(sentenceSep));
   const diff = Diff.diffChars(sefariaString, hbLines.join(lineSep));
@@ -86,21 +88,33 @@ function verifyMerged (merged, sefariaArray, hbArray) {
   }
 }
 
+function checkForException(tractate, daf, text, sefariaLines, hbLines) {
+  const exceptionObj = exceptions[tractate.toLowerCase()];
+  if (exceptionObj?.[daf]?.[text]) {
+    const { sefaria, hb } = exceptionObj[daf][text](sefariaLines, hbLines);
+    return { sefaria, hb };
+  }
+  return { sefaria: sefariaLines, hb: hbLines };
+}
+
+async function mergeText(tractate, daf, text, hbLines) {
+  const {hebrew} = await getText(tractate, daf, text);
+  const { sefaria, hb } = checkForException(tractate, daf, text, hebrew, hbLines)
+  return merge(sefaria, hb);
+}
+//Leave these as three separate functions for now
 async function mergeMain(tractate, daf, mainLines) {
-  const {hebrew} = await getText(tractate, daf, "main");
   console.log(tractate, daf, "Main");
-  return merge(hebrew, mainLines);
+  return await mergeText(tractate, daf, "main", mainLines)
 }
 
 async function mergeRashi(tractate, daf, rashiLines) {
-  const {hebrew} = await getText(tractate, daf, "rashi");
   console.log(tractate, daf, "Rashi");
-  return merge(hebrew, rashiLines);
+  return await mergeText(tractate, daf, "rashi", rashiLines)
 }
 
 async function mergeTosafot(tractate, daf, tosafotLines) {
-  const {hebrew} = await getText(tractate, daf, "tosafot");
-  console.log(tractate, daf, "Tosafot");
-  return merge(hebrew, tosafotLines);
+  console.log(tractate, daf, "Rashi");
+  return await mergeText(tractate, daf, "tosafot", tosafotLines)
 }
 export { mergeMain, mergeRashi, mergeTosafot }

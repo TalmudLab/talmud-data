@@ -94,20 +94,21 @@ async function processPage(page) {
     tosafot = await mergeTosafot(page.tractate, page.daf, tosafotLines);
   if (rashiLines.length)
     rashi = await mergeRashi(page.tractate, page.daf, rashiLines);
-  const output = JSON.stringify({
+  const output = {
     main,
     ...rashi && {rashi},
     ...tosafot && {tosafot},
-  })
+  }
   return output;
 }
 
-// tractatePages(1, '2').next().then(page => processPage(page.value));
-(async () => {
-  for await (const page of tractatePages(1)) {
-    console.log(page.tractate, page.daf);
-    const output = await processPage(page);
-    await writeFile(`../output/${page.tractate}-${page.daf}.json`, output)
-  }
-})();
+tractatePages(1, '2').next().then(page => processPage(page.value));
+// (async () => {
+//   for await (const page of tractatePages(1, '2')) {
+//     console.log(page.tractate, page.daf);
+//     const output = await processPage(page);
+//     output.dateProcessed = Date.now();
+//     await writeFile(`../output/${page.tractate}-${page.daf}.json`, JSON.stringify(output));
+//   }
+// })();
 //
