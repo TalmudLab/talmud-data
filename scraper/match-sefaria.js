@@ -226,7 +226,7 @@ async function mergeRashi(tractate, daf, rashiLines) {
 }
 
 async function mergeTosafot(tractate, daf, tosafotLines) {
-  console.log(tractate, daf, "Rashi");
+  console.log(tractate, daf, "Tosafot");
   return await mergeText(tractate, daf, "tosafot", tosafotLines)
 }
 export { mergeMain, mergeRashi, mergeTosafot }
