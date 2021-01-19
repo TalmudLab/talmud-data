@@ -101,13 +101,32 @@ async function processPage(page) {
   return output;
 }
 
-// tractatePages(1, '2').next().then(page => processPage(page.value));
-(async () => {
-  for await (const page of tractatePages(1, '2')) {
-    console.log(page.tractate, page.daf);
-    const output = await processPage(page);
-    output.dateProcessed = Date.now();
-    await writeFile(`../output/${page.tractate}-${page.daf}.json`, JSON.stringify(output));
+//the first element in argv is the node executable, the second is the index.js file
+const args = process.argv.slice(2);
+const tractate = args[0];
+const startDaf = args[1];
+const validDaf = dafStr => { //TODO: Add check for tractate length
+  if (dafStr.length != 2 && dafStr.length != 1)
+    return false;
+  if (Number.parseInt(dafStr[0]) == NaN)
+    return false;
+  if (dafStr[1] && dafStr[1] != 'b') {
+    return false;
   }
-})();
-//
+  return true;
+}
+
+if (!tractate || !tractates.includes(tractate)) {
+  console.error("Must pass valid tractate as first argument");
+} else if (startDaf && !validDaf(startDaf)) {
+  console.error ("Second argument must be valid daf, e.g., 4 or 8b")
+} else {
+  (async () => {
+    for await (const page of tractatePages(tractates.indexOf(tractate) + 1, startDaf || '2')) {
+      console.log(page.tractate, page.daf);
+      const output = await processPage(page);
+      output.dateProcessed = Date.now();
+      await writeFile(`../output/${page.tractate}-${page.daf}.json`, JSON.stringify(output));
+    }
+  })();
+}
