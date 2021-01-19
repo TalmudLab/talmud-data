@@ -87,11 +87,10 @@ async function processPage(page) {
   const mainLines = linesArray($('.shastext2').html());
   const rashiLines = linesArray($(".shastext3").html());
   const tosafotLines = linesArray($(".shastext4").html());
-  console.log(mainLines.length, rashiLines.length, tosafotLines.length);
-  // const main = await mergeMain(page.tractate, page.daf, mainLines);
+  const main = await mergeMain(page.tractate, page.daf, mainLines);
   let tosafot, rashi;
-  // if (tosafotLines.length)
-  //   tosafot = await mergeTosafot(page.tractate, page.daf, tosafotLines);
+  if (tosafotLines.length)
+    tosafot = await mergeTosafot(page.tractate, page.daf, tosafotLines);
   if (rashiLines.length)
     rashi = await mergeRashi(page.tractate, page.daf, rashiLines);
   const output = {
@@ -102,13 +101,13 @@ async function processPage(page) {
   return output;
 }
 
-tractatePages(1, '2').next().then(page => processPage(page.value));
-// (async () => {
-//   for await (const page of tractatePages(1, '2')) {
-//     console.log(page.tractate, page.daf);
-//     const output = await processPage(page);
-//     output.dateProcessed = Date.now();
-//     await writeFile(`../output/${page.tractate}-${page.daf}.json`, JSON.stringify(output));
-//   }
-// })();
+// tractatePages(1, '2').next().then(page => processPage(page.value));
+(async () => {
+  for await (const page of tractatePages(1, '2')) {
+    console.log(page.tractate, page.daf);
+    const output = await processPage(page);
+    output.dateProcessed = Date.now();
+    await writeFile(`../output/${page.tractate}-${page.daf}.json`, JSON.stringify(output));
+  }
+})();
 //

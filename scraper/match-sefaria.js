@@ -37,7 +37,7 @@ function diffsToString(diffs) {
         merged += sentenceSep
       else {
         if (part.value.trim())
-          console.warn(`Removed ${part.value} from Sefaria`.blue)
+          process.stdout.write(`Removed ${part.value} from Sefaria\n`.blue)
       }
     } else if (part.added) {
       let add = "";
@@ -49,7 +49,7 @@ function diffsToString(diffs) {
         add += "[";
       merged += add;
       if (!add && part.value.trim()) {
-        console.warn(`Removed ${part.value} from Hebrew Books`)
+        process.stdout.write(`Removed ${part.value} from Hebrew Books\n`.red)
       }
     } else {
       merged += part.value;
@@ -116,11 +116,11 @@ function mergeCommentary(sefariaLines, hbLines) {
           if (index != -1) {
             const adjust = (hbHeader.length - 1 - index)
             headerLength -= adjust;
-            console.log ("moved back " + adjust);
+            process.stdout.write("moved back " + adjust);
             hbHeader = hbString.slice(hbIndex, hbIndex + headerLength);
             lastChar = hbHeader[hbHeader.length - 1];
           } else {
-            console.log ("last char not in string")
+            process.stdout.write("last char not in string")
           }
         } else {
           process.stdout.write("looking good!")
@@ -152,9 +152,7 @@ function mergeCommentary(sefariaLines, hbLines) {
       merged.push(currMerged);
     }
   )
-  console.log(merged);
-
-
+  return merged;
 }
 function merge(sefariaLines, hbLines) {
 
