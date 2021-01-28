@@ -129,6 +129,7 @@ function mergeCommentary(sefariaLines, hbLines) {
           process.stdout.write("; ")
           if (lastChar != "]")
             throw new Error(`Header ended in '${lastChar}' rather than '['`)
+
         } else if (index == 1) {
           console.log();
           if (lastChar != ":")
