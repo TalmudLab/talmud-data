@@ -81,7 +81,7 @@ function mergeCommentary(sefariaLines, hbLines) {
         split[0] += ".";
       }
       const currMerged = [];
-      split.forEach( (header, index) => {
+      split.forEach( (substring, index) => {
         process.stdout.write(["Header ", "Comment "][index])
         let adjustReach = 0;
         if (hbIndex != 0) {
@@ -96,7 +96,7 @@ function mergeCommentary(sefariaLines, hbLines) {
           }
         }
         let lineSepCount = 0;
-        let headerLength = header.length + adjustReach;
+        let headerLength = substring.length + adjustReach;
         if (index == 0) {
           headerLength += 2; //account for starting and ending brackets
           //Sefaria never has the "gemara" label at their first comment on the gemara, so account for that
@@ -104,26 +104,26 @@ function mergeCommentary(sefariaLines, hbLines) {
           if (hbString.substr(hbIndex, gemaraLabel.length) == gemaraLabel)
             headerLength += gemaraLabel.length;
         }
-        let hbHeader = hbString.slice(hbIndex, hbIndex + headerLength);
-        let count = (hbHeader.match(new RegExp(lineSep, 'g')) || []).length;
+        let hbSubstring = hbString.slice(hbIndex, hbIndex + headerLength);
+        let count = (hbSubstring.match(new RegExp(lineSep, 'g')) || []).length;
         while (count != lineSepCount) {
           headerLength += (count - lineSepCount) * (lineSep.length - 1);
-          hbHeader = hbString.slice(hbIndex, hbIndex + headerLength)
+          hbSubstring = hbString.slice(hbIndex, hbIndex + headerLength)
           lineSepCount = count;
-          count = (hbHeader.match(new RegExp(lineSep, 'g')) || []).length;
+          count = (hbSubstring.match(new RegExp(lineSep, 'g')) || []).length;
         }
-        let lastChar = hbHeader[hbHeader.length - 1];
+        let lastChar = hbSubstring[hbSubstring.length - 1];
         const desiredLastChar = index == 0 ? ']' : ':';
         const negativeLookAhead = "(?!\\))"
         if (lastChar != desiredLastChar) {
           const regex = new RegExp(desiredLastChar + negativeLookAhead, "g")
-          const index = hbHeader.search(regex);
+          const index = hbSubstring.search(regex);
           if (index != -1) {
-            const adjust = (hbHeader.length - 1 - index)
+            const adjust = (hbSubstring.length - 1 - index)
             headerLength -= adjust;
             process.stdout.write("moved back " + adjust);
-            hbHeader = hbString.slice(hbIndex, hbIndex + headerLength);
-            lastChar = hbHeader[hbHeader.length - 1];
+            hbSubstring = hbString.slice(hbIndex, hbIndex + headerLength);
+            lastChar = hbSubstring[hbSubstring.length - 1];
           } else {
             //Try and move forward
             const remaining = hbString.slice(hbIndex + headerLength);
@@ -136,8 +136,8 @@ function mergeCommentary(sefariaLines, hbLines) {
             }
             headerLength += adjust;
             process.stdout.write("moved forward " + adjust);
-            hbHeader = hbString.slice(hbIndex, hbIndex + headerLength);
-            lastChar = hbHeader[hbHeader.length - 1];
+            hbSubstring = hbString.slice(hbIndex, hbIndex + headerLength);
+            lastChar = hbSubstring[hbSubstring.length - 1];
           }
         } else {
           process.stdout.write("looking good!")
@@ -152,7 +152,7 @@ function mergeCommentary(sefariaLines, hbLines) {
           if (lastChar != ":")
             throw new Error(`Comment ended in '${lastChar}' rather than ':'`)
         }
-        const headerDiff = Diff.diffChars(header, hbHeader);
+        const headerDiff = Diff.diffChars(substring, hbSubstring);
         const changes = headerDiff.filter(diff => diff.added || diff.removed)
         // const unexpectedChange = changes.find(change => change.value.length > Math.max(lineSep.length, sentenceSep.length));
         // if (unexpectedChange) {
@@ -162,7 +162,7 @@ function mergeCommentary(sefariaLines, hbLines) {
         //     console.warn(`Removed ${unexpectedChange.value} from Hebrew Books`)
         //   }
         // }
-        const merged = diffsToString(Diff.diffChars(header, hbHeader));
+        const merged = diffsToString(Diff.diffChars(substring, hbSubstring));
         currMerged.push(merged);
         hbIndex += headerLength;
 
