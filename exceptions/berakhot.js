@@ -7,10 +7,10 @@ export default {
 
       //Remove the א] that HebrewBooks appends to the last Rashi
       const fixedHb = [...hb];
-      fixedHb[53] = fixedHb[53].replace('א]', '');
+      fixedHb[53] = fixedHb[53].replace('א] ', '');
       return {
         sefaria: fixedSefaria,
-        hb
+        hb: fixedHb
       }
     }
   },
