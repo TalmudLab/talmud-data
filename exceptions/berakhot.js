@@ -1,11 +1,15 @@
 export default {
   "2b": {
     rashi (sefaria, hb) {
-      //The third rashi that sefaria has isn't there on Hebrewbooks - interestingly, both sources have it as a Tosafot
-      const copy = [...sefaria]
-      copy.splice(2, 1);
+      //The third rashi that sefaria has isn't there on HebrewBooks - interestingly, both sources have it as a Tosafot
+      const fixedSefaria = [...sefaria]
+      fixedSefaria.splice(2, 1);
+
+      //Remove the א] that HebrewBooks appends to the last Rashi
+      const fixedHb = [...hb];
+      fixedHb[53] = fixedHb[53].replace('א]', '');
       return {
-        sefaria: copy,
+        sefaria: fixedSefaria,
         hb
       }
     }
