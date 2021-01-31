@@ -120,7 +120,19 @@ function mergeCommentary(sefariaLines, hbLines) {
             hbHeader = hbString.slice(hbIndex, hbIndex + headerLength);
             lastChar = hbHeader[hbHeader.length - 1];
           } else {
-            process.stdout.write("last char not in string")
+            //Try and move forward
+            const remaining = hbString.slice(hbIndex + headerLength);
+            const adjust = 1 + remaining.search(regex);
+            if (adjust > 20) {
+              throw new Error("Needing to move too far forward")
+            }
+            if (!adjust) {
+              throw new Error(`Desired last char ${desiredLastChar} not found in string`);
+            }
+            headerLength += adjust;
+            process.stdout.write("moved forward " + adjust);
+            hbHeader = hbString.slice(hbIndex, hbIndex + headerLength);
+            lastChar = hbHeader[hbHeader.length - 1];
           }
         } else {
           process.stdout.write("looking good!")
