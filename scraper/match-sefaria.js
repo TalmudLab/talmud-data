@@ -72,9 +72,14 @@ function mergeCommentary(sefariaLines, hbLines) {
       process.stdout.write(`Comment #${index + 1} `.green );
       const split = line.split(/[-–—]/g).map(str => str.trim());
       if (split.length != 2) {
-        throw new Error("Expected one dash to delineate comment header; found " + split.length - 1);
+        if (split.length == 1 && split[0].includes('ה"ג')) {
+          process.stdout.write(`Hachi Garsinan case\n`.red);
+        } else {
+          throw new Error("Expected one dash to delineate comment header; found " + split.length - 1);
+        }
+      } else {
+        split[0] += ".";
       }
-      split[0] += ".";
       const currMerged = [];
       split.forEach( (header, index) => {
         process.stdout.write(["Header ", "Comment "][index])
