@@ -143,7 +143,7 @@ function mergeCommentary(sefariaLines, hbLines) {
           process.stdout.write("looking good!")
         }
         if (index == 0) {
-          process.stdout.write("; ")
+          process.stdout.write(" ")
           if (lastChar != "]")
             throw new Error(`Header ended in '${lastChar}' rather than '['`)
 
