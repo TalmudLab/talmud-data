@@ -14,6 +14,16 @@ export default {
       }
     }
   },
+  "3": {
+    tosafot (sefaria, hb) {
+      //Sefaria duplicates two Tosafot and puts them in the wrong place
+      const wantedIndices = [0, 1, 2, 4, 3]
+      return {
+        sefaria: wantedIndices.map(v => sefaria[v]),
+        hb
+      }
+    }
+  },
   "5b": {
     rashi (sefaria, hb) {
       //rashi order discrepancy
