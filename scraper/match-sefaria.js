@@ -6,6 +6,7 @@ import colors from "colors";
 const textURI = (tractate, daf, type) => {
   switch (type) {
     case "main":
+      if (!daf.includes("b")) daf += "a";
       return 'https://www.sefaria.org/api/texts/' + tractate + '.' + daf + '?vhe=Wikisource_Talmud_Bavli';
     case "rashi":
       return 'https://www.sefaria.org/api/texts/Rashi_on_' + tractate + '.' + daf + '.1-100' + '?';
