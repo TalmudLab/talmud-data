@@ -35,6 +35,20 @@ export default {
       }
     }
   },
+  "4": {
+    rashi (sefaria, hb) {
+      /*
+      Swap the second and third Rashi. Note that the original order is actually the
+      correct one according to Mesoret Hashas, but I'm changing it to reflect the actual
+      appearance of the printed Vilna.
+       */
+      const swapped = [sefaria[0], sefaria[2], sefaria[1], ...sefaria.slice(3)];
+      return {
+        sefaria: swapped,
+        hb
+      }
+    }
+  },
   "5b": {
     rashi (sefaria, hb) {
       //rashi order discrepancy
