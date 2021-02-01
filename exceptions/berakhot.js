@@ -1,3 +1,6 @@
+function grab(textArr, ...indexes) {
+  return indexes.map(index => textArr[index]);
+}
 export default {
   "2b": {
     rashi (sefaria, hb) {
@@ -17,9 +20,17 @@ export default {
   "3": {
     tosafot (sefaria, hb) {
       //Sefaria duplicates two Tosafot and puts them in the wrong place
-      const wantedIndices = [0, 1, 2, 4, 3]
       return {
-        sefaria: wantedIndices.map(v => sefaria[v]),
+        sefaria: grab(sefaria, 0, 1, 2, 4, 3),
+        hb
+      }
+    }
+  },
+  "3b": {
+    tosafot (sefaria, hb) {
+      //Out of order and duplicates, plus an extra Tosafot that HebrewBooks doesn't have
+      return {
+        sefaria: grab(sefaria, 1, 2, 5, 4, 6),
         hb
       }
     }
