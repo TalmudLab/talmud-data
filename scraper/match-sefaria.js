@@ -4,6 +4,7 @@ import exceptions from "../exceptions/index.js";
 import colors from "colors";
 
 const textURI = (tractate, daf, type) => {
+  if (!daf.includes("b")) daf += "a";
   switch (type) {
     case "main":
       return 'https://www.sefaria.org/api/texts/' + tractate + '.' + daf + '?vhe=Wikisource_Talmud_Bavli';
@@ -86,7 +87,10 @@ function mergeCommentary(sefariaLines, hbLines) {
             process.stdout.write(`No header\n`.red);
           }
         } else {
-          throw new Error("Expected one dash to delineate comment header; found " + split.length - 1);
+          process.stdout.write(`Expected one dash to delineate comment header; found ${split.length - 1}.
+          Ignoring the last ${split.length - 2}\n`.red);
+          const removed = split.splice(2);
+          split[split.length - 1] += removed.join(' ');
         }
       } else {
         split[0] += ".";
