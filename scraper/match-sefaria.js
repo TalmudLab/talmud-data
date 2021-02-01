@@ -24,7 +24,6 @@ async function getText(tractate, daf, type) {
       hebrew: obj.he.filter(arr => arr.length).flat().filter(str => str.length),
     }
   }
-  ;
 }
 
 const lineSep = '<br>';
