@@ -49,6 +49,16 @@ export default {
       }
     }
   },
+  "5": {
+    rashi (sefaria, hb) {
+      //rashi order discrepancy
+      const swapped = [...sefaria.slice(0, 8), sefaria[9], sefaria[8], ...sefaria.slice(10)]
+      return {
+        sefaria: swapped,
+        hb
+      }
+    }
+  },
   "5b": {
     rashi (sefaria, hb) {
       //rashi order discrepancy
