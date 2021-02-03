@@ -99,9 +99,9 @@ async function mergePage(tractate, daf, lines, nextLines) {
   const main = await mergeMain(tractate, daf, lines.main);
   let tosafot, rashi;
   if (lines.tosafot.length)
-    tosafot = await mergeTosafot(tractate, daf, lines.tosafot);
+    tosafot = await mergeTosafot(tractate, daf, lines.tosafot, nextLines.tosafot);
   if (lines.rashi.length)
-    rashi = await mergeRashi(tractate, daf, lines.rashi);
+    rashi = await mergeRashi(tractate, daf, lines.rashi, nextLines.rashi);
   const output = {
     main,
     ...rashi && {rashi},

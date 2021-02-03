@@ -64,13 +64,24 @@ function diffsToString(diffs) {
   return merged;
 }
 
-function mergeCommentary(sefariaLines, hbLines) {
-  const hbString = hbLines.join(lineSep)
+function mergeCommentary(sefariaLines, hbLines, nextHb) {
+  const hbToString = lines => lines.join(lineSep)
     .replace(/\]\[/g, "")
     .replace(/\]\s+\[/g, " ")
     .replaceAll("[ ", " [")
     .replaceAll(" ]", "] ")
-    .replaceAll(" :", ":")
+    .replaceAll(" :", ":");
+  let hbString = hbToString(hbLines);
+  //Remove the preview word
+  const lastColon = hbString.lastIndexOf(":");
+  const preview = hbString.slice(lastColon + 1).replace(lineSep, "");
+  hbString = hbString.slice(0, lastColon + 1);
+  //Add the next amud's HebrewBooks lines, in case they're needed
+  const nextString = hbToString(nextHb);
+  if (!nextString.substr(0, nextString.indexOf(" ")).includes(preview)) {
+    throw new Error("Preview word doesn't match first word on next amud");
+  }
+  hbString += nextString;
   let hbIndex = 0;
   const merged = [];
   sefariaLines.forEach((line, index) => {
@@ -254,10 +265,10 @@ function checkForException(tractate, daf, text, sefariaLines, hbLines) {
   return {sefaria: sefariaLines, hb: hbLines};
 }
 
-async function mergeText(tractate, daf, text, hbLines) {
+async function mergeText(tractate, daf, text, hbLines, nextHb) {
   const {hebrew} = await getText(tractate, daf, text);
   const {sefaria, hb} = checkForException(tractate, daf, text, hebrew, hbLines)
-  return text == "main" ? merge(sefaria, hb) : mergeCommentary(sefaria, hb);
+  return text == "main" ? merge(sefaria, hb) : mergeCommentary(sefaria, hb, nextHb);
 }
 
 //Leave these as three separate functions for now
@@ -266,14 +277,14 @@ async function mergeMain(tractate, daf, mainLines) {
   return await mergeText(tractate, daf, "main", mainLines)
 }
 
-async function mergeRashi(tractate, daf, rashiLines) {
+async function mergeRashi(tractate, daf, rashiLines, nextLines) {
   console.log(tractate, daf, "Rashi");
-  return await mergeText(tractate, daf, "rashi", rashiLines)
+  return await mergeText(tractate, daf, "rashi", rashiLines, nextLines)
 }
 
-async function mergeTosafot(tractate, daf, tosafotLines) {
+async function mergeTosafot(tractate, daf, tosafotLines, nextLines) {
   console.log(tractate, daf, "Tosafot");
-  return await mergeText(tractate, daf, "tosafot", tosafotLines)
+  return await mergeText(tractate, daf, "tosafot", tosafotLines, nextLines)
 }
 
 export {mergeMain, mergeRashi, mergeTosafot}
