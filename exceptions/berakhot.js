@@ -72,7 +72,7 @@ export default {
     },
     rashi (sefaria, hb) {
       //rashi order discrepancy
-      const swapped = [...sefaria.slice(0, 12), sefaria[14], sefaria[13], ...sefaria.slice(15)]
+      const swapped = [...sefaria.slice(0, 13), sefaria[14], sefaria[13], ...sefaria.slice(15)]
       return {
         sefaria: swapped,
         hb
