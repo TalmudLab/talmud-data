@@ -102,12 +102,17 @@ async function mergePage(tractate, daf, lines, nextLines) {
     tosafot = await mergeTosafot(tractate, daf, lines.tosafot, nextLines.tosafot);
   if (lines.rashi.length)
     rashi = await mergeRashi(tractate, daf, lines.rashi, nextLines.rashi);
-  const output = {
+
+  const merged = {
     main,
-    ...rashi && {rashi},
-    ...tosafot && {tosafot},
+    ...rashi && {rashi: rashi.merged},
+    ...tosafot && {tosafot: tosafot.merged},
   }
-  return output;
+  const next = {
+    ...rashi?.next?.length && {rashi: rashi.next},
+    ...tosafot?.next?.length && {tosafot: tosafot.next}
+  }
+  return { merged, next };
 }
 
 //the first element in argv is the node executable, the second is the index.js file
@@ -138,9 +143,9 @@ if (!tractate || !tractates.includes(tractate)) {
         const { tractate, daf } = loadedPages[loadedPages.length - 2];
         console.log(tractate, daf);
         const pair = loadedPages.slice(-2).map(processPage);
-        const output = await mergePage(tractate, daf, pair[0], pair[1]);
-        output.dateProcessed = Date.now();
-        await writeFile(`../output/${page.tractate}-${page.daf}.json`, JSON.stringify(output));
+        const { merged, next } = await mergePage(tractate, daf, pair[0], pair[1]);
+        // output.dateProcessed = Date.now();
+        // await writeFile(`../output/${page.tractate}-${page.daf}.json`, JSON.stringify(output));
       }
     }
   })();
