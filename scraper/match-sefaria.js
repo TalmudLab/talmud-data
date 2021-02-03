@@ -78,13 +78,17 @@ function mergeCommentary(sefariaLines, hbLines, nextHb) {
   hbString = hbString.slice(0, pageEndIndex + 1);
   //Add the next amud's HebrewBooks lines, in case they're needed
   const pageEndMarker = "%";
-  const nextString = hbToString(nextHb);
-  if (!nextString.substr(0, nextString.indexOf(" ")).includes(preview)) {
-    throw new Error("Preview word doesn't match first word on next amud");
+  if (nextHb.length) {
+    const nextString = hbToString(nextHb);
+    if (!nextString.substr(0, nextString.indexOf(" ")).includes(preview)) {
+      throw new Error("Preview word doesn't match first word on next amud");
+    }
+    hbString += pageEndMarker + nextString;
   }
-  hbString += pageEndMarker + nextString;
   let hbIndex = 0;
   const merged = [];
+  const next = [];
+  let writeToNextPage = false;
   sefariaLines.forEach((line, index) => {
       process.stdout.write(`Comment #${index + 1} `.green);
       const split = line.split(/[-–—]/g).map(str => str.trim());
@@ -112,13 +116,15 @@ function mergeCommentary(sefariaLines, hbLines, nextHb) {
         let headerLength = substring.length;
         if (hbIndex != 0) {
           /* there's either a space, line break, or page break between each block
-            Treat this for-loop as an easier-to-maintain switch statement.
-            If the loop gets to the null at the end of the array, that's the "else".
+            Treat this for-loop as a nicer switch statement.
+            If the loop gets to the null at the end of the array, none of the
+            separators were found.
            */
           const separators = [" ", lineSep, pageEndMarker, null];
           for (const sep of separators) {
             if (sep == null)
               throw new Error("Unexpected comment divisor")
+            if (sep == pageEndMarker) writeToNextPage = true;
             if (hbString.substr(hbIndex, sep.length) == sep) {
               hbIndex += sep.length;
               break;
@@ -206,14 +212,22 @@ function mergeCommentary(sefariaLines, hbLines, nextHb) {
         //   }
         // }
         const merged = diffsToString(Diff.diffChars(substring, hbSubstring));
-        currMerged.push(merged);
+        const pageBreakSplit = merged.split(pageEndMarker);
+        if (pageBreakSplit.length == 2) {
+          const nextPageStart = pageBreakSplit[1];
+          next.push(nextPageStart);
+          writeToNextPage = true;
+        }
+        currMerged.push(pageBreakSplit[0]);
         hbIndex += headerLength;
-
       })
-      merged.push(currMerged);
+      if (writeToNextPage)
+        next.push(currMerged);
+      else
+        merged.push(currMerged);
     }
   )
-  return merged;
+  return { merged, next }
 }
 
 function merge(sefariaLines, hbLines) {
