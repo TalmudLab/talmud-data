@@ -144,6 +144,9 @@ function mergeCommentary(sefariaLines, hbLines) {
           const index = hbSubstring.search(regex);
           if (index != -1) {
             const adjust = (hbSubstring.length - 1 - index)
+            if (adjust > 100) {
+              throw new Error("Needing to move too far back");
+            }
             headerLength -= adjust;
             process.stdout.write("moved back " + adjust);
             hbSubstring = hbString.slice(hbIndex, hbIndex + headerLength);
