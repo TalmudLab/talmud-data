@@ -73,15 +73,16 @@ function mergeCommentary(sefariaLines, hbLines, nextHb) {
     .replaceAll(" :", ":");
   let hbString = hbToString(hbLines);
   //Remove the preview word
-  const lastColon = hbString.lastIndexOf(":");
-  const preview = hbString.slice(lastColon + 1).replace(lineSep, "");
-  hbString = hbString.slice(0, lastColon + 1);
+  const pageEndIndex = hbString.lastIndexOf(":");
+  const preview = hbString.slice(pageEndIndex + 1).replace(lineSep, "");
+  hbString = hbString.slice(0, pageEndIndex + 1);
   //Add the next amud's HebrewBooks lines, in case they're needed
+  const pageEndMarker = "%";
   const nextString = hbToString(nextHb);
   if (!nextString.substr(0, nextString.indexOf(" ")).includes(preview)) {
     throw new Error("Preview word doesn't match first word on next amud");
   }
-  hbString += nextString;
+  hbString += pageEndMarker + nextString;
   let hbIndex = 0;
   const merged = [];
   sefariaLines.forEach((line, index) => {
@@ -110,13 +111,18 @@ function mergeCommentary(sefariaLines, hbLines, nextHb) {
         process.stdout.write(["Header ", "Comment "][index])
         let headerLength = substring.length;
         if (hbIndex != 0) {
-          // there's either a space or a line break between each block
-          if (hbString[hbIndex] == " ") {
-            hbIndex++;
-          } else if (hbString.substr(hbIndex, lineSep.length) == lineSep) {
-            headerLength += lineSep.length;
-          } else {
-            throw new Error("Unexpected comment divisor")
+          /* there's either a space, line break, or page break between each block
+            Treat this for-loop as an easier-to-maintain switch statement.
+            If the loop gets to the null at the end of the array, that's the "else".
+           */
+          const separators = [" ", lineSep, pageEndMarker, null];
+          for (const sep of separators) {
+            if (sep == null)
+              throw new Error("Unexpected comment divisor")
+            if (hbString.substr(hbIndex, sep.length) == sep) {
+              hbIndex += sep.length;
+              break;
+            }
           }
         }
         if (index == 0) {
