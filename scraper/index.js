@@ -58,7 +58,7 @@ function linesArray(html) {
 }
 
 
-async function processPage(page) {
+function processPage(page) {
   const $ = cheerio.load(page.body);
 
   const replaceSpans = divSelector => {
@@ -87,12 +87,21 @@ async function processPage(page) {
   const mainLines = linesArray($('.shastext2').html());
   const rashiLines = linesArray($(".shastext3").html());
   const tosafotLines = linesArray($(".shastext4").html());
-  const main = await mergeMain(page.tractate, page.daf, mainLines);
+
+  return {
+    main: mainLines,
+    rashi: rashiLines,
+    tosafot: tosafotLines
+  }
+}
+
+async function mergePage(lines) {
+  const main = await mergeMain(page.tractate, page.daf, lines.main);
   let tosafot, rashi;
   if (tosafotLines.length)
-    tosafot = await mergeTosafot(page.tractate, page.daf, tosafotLines);
+    tosafot = await mergeTosafot(page.tractate, page.daf, lines.tosafot);
   if (rashiLines.length)
-    rashi = await mergeRashi(page.tractate, page.daf, rashiLines);
+    rashi = await mergeRashi(page.tractate, page.daf, lines.rashi);
   const output = {
     main,
     ...rashi && {rashi},
@@ -122,11 +131,16 @@ if (!tractate || !tractates.includes(tractate)) {
   console.error ("Second argument must be valid daf, e.g., 4 or 8b")
 } else {
   (async () => {
+    const loadedPages = [];
     for await (const page of tractatePages(tractates.indexOf(tractate) + 1, startDaf || '2')) {
       console.log(page.tractate, page.daf);
-      const output = await processPage(page);
-      output.dateProcessed = Date.now();
-      await writeFile(`../output/${page.tractate}-${page.daf}.json`, JSON.stringify(output));
+      loadedPages.push(page);
+      if (loadedPages.length >= 2) {
+        const pair = loadedPages.slice(-2).map(processPage);
+
+        output.dateProcessed = Date.now();
+        await writeFile(`../output/${page.tractate}-${page.daf}.json`, JSON.stringify(output));
+      }
     }
   })();
 }
