@@ -47,12 +47,12 @@ function diffsToString(diffs) {
       }
     } else if (part.added) {
       let add = "";
-      if (part.value.includes("]"))
-        add += "] ";
+      if (part.value.includes("}"))
+        add += "} ";
       if (part.value.includes(lineSep))
         add += lineSep;
-      if (part.value.includes("["))
-        add += "[";
+      if (part.value.includes("{"))
+        add += "{";
       merged += add;
       if (!add && part.value.trim()) {
         process.stdout.write(`Removed ${part.value} from Hebrew Books\n`.red)
@@ -68,8 +68,8 @@ function mergeCommentary(sefariaLines, hbLines, nextHb, prevMerged) {
   const hbToString = lines => lines.join(lineSep)
     .replace(/\]\[/g, "")
     .replace(/\]\s+\[/g, " ")
-    .replaceAll("[ ", " [")
-    .replaceAll(" ]", "] ")
+    .replaceAll("{ ", " {")
+    .replaceAll(" }", "} ")
     .replaceAll(" :", ":");
   let hbString = hbToString(hbLines);
   let hbIndex = 0;
@@ -140,7 +140,7 @@ function mergeCommentary(sefariaLines, hbLines, nextHb, prevMerged) {
         if (index == 0) {
           headerLength += 2; //account for starting and ending brackets
           //Sefaria never has the "gemara" label at their first comment on the gemara, so account for that
-          const gemaraLabel = "[גמ' "
+          const gemaraLabel = "}גמ' "
           if (hbString.substr(hbIndex, gemaraLabel.length) == gemaraLabel)
             headerLength += gemaraLabel.length;
         }
@@ -166,7 +166,7 @@ function mergeCommentary(sefariaLines, hbLines, nextHb, prevMerged) {
           count = (hbSubstring.match(new RegExp(lineSep, 'g')) || []).length;
         }
         let lastChar = hbSubstring[hbSubstring.length - 1];
-        const desiredLastChar = (justOne || index == 1) ? ':' : ']';
+        const desiredLastChar = (justOne || index == 1) ? ':' : '}';
         const negativeLookAhead = "(?!\\))"
         if (lastChar != desiredLastChar) {
           const regex = new RegExp(desiredLastChar + negativeLookAhead, "g")
@@ -204,8 +204,8 @@ function mergeCommentary(sefariaLines, hbLines, nextHb, prevMerged) {
             throw new Error(`Comment ended in '${lastChar}' rather than ':'`)
         } else if (index == 0) {
           process.stdout.write(" ")
-          if (lastChar != "]")
-            throw new Error(`Header ended in '${lastChar}' rather than '['`)
+          if (lastChar != "}")
+            throw new Error(`Header ended in '${lastChar}' rather than '{'`)
         }
         const headerDiff = Diff.diffChars(substring, hbSubstring);
         const changes = headerDiff.filter(diff => diff.added || diff.removed)
@@ -240,8 +240,34 @@ function merge(sefariaLines, hbLines) {
 
   const sefariaString = processHebrew(sefariaLines.join(sentenceSep));
   const diffs = Diff.diffChars(sefariaString, hbLines.join(lineSep));
-  let merged = diffsToString(diffs);
 
+  let merged = "";
+  diffs.forEach((part) => {
+    if (part.removed) {
+      if (part.value.includes(sentenceSep))
+        merged += sentenceSep
+      else {
+        if (part.value.trim())
+          process.stdout.write(`Removed ${part.value} from Sefaria\n`.blue)
+      }
+    } else if (part.added) {
+      // let add = "";
+      // if (part.value.includes("]"))
+      //   add += "] ";
+      // if (part.value.includes(lineSep))
+      //   add += lineSep;
+      // if (part.value.includes("["))
+      //   add += "[";
+      merged += part.value.trim();
+      // if (!add && part.value.trim()) {
+      //   process.stdout.write(`Removed ${part.value} from Hebrew Books\n`.red)
+      // }
+    } else {
+      merged += part.value;
+    }
+  });
+  merged = merged
+    .replaceAll(`${sentenceSep}.`, `.${sentenceSep}`)
   const issues = verifyMerged(merged, sefariaLines.map(processHebrew), hbLines);
   return {
     merged,

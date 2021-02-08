@@ -76,7 +76,7 @@ function processPage(page) {
         newlineEnd = true;
       }
 
-      return  `${newlineStart ? '\n' : ''}[${inner}]${newlineEnd ? '\n' : ''}`;
+      return  `${newlineStart ? '\n' : ''}{${inner}}${newlineEnd ? '\n' : ''}`;
     })
     $(divSelector).find("div").replaceWith ( function () {
       return $(this).text();
