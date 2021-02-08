@@ -60,16 +60,16 @@ export default {
     }
   },
   "5b": {
-    tosafot (sefaria, hb) {
-      //Duplicate Tosafot. Second has . instead of -
-      sefaria.splice(2, 1);
-      sefaria[2] += ' ה"ג';
-      sefaria[3] = sefaria[3].replace('ה"ג', '');
-      return {
-        sefaria,
-        hb
-      }
-    },
+    // tosafot (sefaria, hb) {
+    //   //Duplicate Tosafot. Second has . instead of -
+    //   sefaria.splice(2, 1);
+    //   sefaria[2] += ' ה"ג';
+    //   sefaria[3] = sefaria[3].replace('ה"ג', '');
+    //   return {
+    //     sefaria,
+    //     hb
+    //   }
+    // },
     rashi (sefaria, hb) {
       //rashi order discrepancy
       const swapped = [...sefaria.slice(0, 13), sefaria[14], sefaria[13], ...sefaria.slice(15)]

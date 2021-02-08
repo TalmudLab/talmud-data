@@ -95,13 +95,13 @@ function processPage(page) {
   }
 }
 
-async function mergePage(tractate, daf, lines, nextLines) {
+async function mergePage(tractate, daf, lines, nextLines, prevData) {
   const main = await mergeMain(tractate, daf, lines.main);
   let tosafot, rashi;
   if (lines.tosafot.length)
-    tosafot = await mergeTosafot(tractate, daf, lines.tosafot, nextLines.tosafot);
+    tosafot = await mergeTosafot(tractate, daf, lines.tosafot, nextLines.tosafot, prevData?.tosafot || []);
   if (lines.rashi.length)
-    rashi = await mergeRashi(tractate, daf, lines.rashi, nextLines.rashi);
+    rashi = await mergeRashi(tractate, daf, lines.rashi, nextLines.rashi, prevData?.rashi || []);
 
   const merged = {
     main,
@@ -137,15 +137,17 @@ if (!tractate || !tractates.includes(tractate)) {
 } else {
   (async () => {
     const loadedPages = [];
+    let nextPageData = {};
     for await (const page of tractatePages(tractates.indexOf(tractate) + 1, startDaf || '2')) {
       loadedPages.push(page);
       if (loadedPages.length >= 2) {
         const { tractate, daf } = loadedPages[loadedPages.length - 2];
         console.log(tractate, daf);
         const pair = loadedPages.slice(-2).map(processPage);
-        const { merged, next } = await mergePage(tractate, daf, pair[0], pair[1]);
-        // output.dateProcessed = Date.now();
-        // await writeFile(`../output/${page.tractate}-${page.daf}.json`, JSON.stringify(output));
+        const { merged, next } = await mergePage(tractate, daf, pair[0], pair[1], nextPageData);
+        nextPageData = next;
+        merged.dateProcessed = Date.now();
+        await writeFile(`../output/${page.tractate}-${page.daf}.json`, JSON.stringify(merged));
       }
     }
   })();
