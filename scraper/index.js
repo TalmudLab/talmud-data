@@ -135,17 +135,18 @@ if (!tractate || !tractates.includes(tractate)) {
 } else if (startDaf && !validDaf(startDaf)) {
   console.error ("Second argument must be valid daf, e.g., 4 or 8b")
 } else {
-  for await (const page of tractatePages(tractates.indexOf(tractate) + 1, startDaf || '2')) {
-    const { tractate, daf } = page;
-    const { main, rashi, tosafot } = processPage(page);
-    const merged = await mergeMain(tractate, daf, main);
-    const output = {
-      main: merged,
-      rashi: rashi.join("<br>"),
-      tosafot: tosafot.join("<br>"),
-    }
-    await writeFile(`../output/${page.tractate}-${page.daf}.json`, JSON.stringify(output));
-  }
+  mergeAllThree();
+  // for await (const page of tractatePages(tractates.indexOf(tractate) + 1, startDaf || '2')) {
+  //   const { tractate, daf } = page;
+  //   const { main, rashi, tosafot } = processPage(page);
+  //   const merged = await mergeMain(tractate, daf, main);
+  //   const output = {
+  //     main: merged,
+  //     rashi: rashi.join("<br>"),
+  //     tosafot: tosafot.join("<br>"),
+  //   }
+  //   await writeFile(`../output/${page.tractate}-${page.daf}.json`, JSON.stringify(output));
+  // }
 }
 
 async function mergeAllThree() {

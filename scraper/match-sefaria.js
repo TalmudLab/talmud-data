@@ -66,8 +66,8 @@ function diffsToString(diffs) {
 
 function mergeCommentary(sefariaLines, hbLines, nextHb, prevMerged) {
   const hbToString = lines => lines.join(lineSep)
-    .replace(/\]\[/g, "")
-    .replace(/\]\s+\[/g, " ")
+    .replace(/\}\{/g, "")
+    .replace(/\}\s+\{/g, " ")
     .replaceAll("{ ", " {")
     .replaceAll(" }", "} ")
     .replaceAll(" :", ":");
