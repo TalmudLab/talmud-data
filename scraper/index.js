@@ -135,20 +135,32 @@ if (!tractate || !tractates.includes(tractate)) {
 } else if (startDaf && !validDaf(startDaf)) {
   console.error ("Second argument must be valid daf, e.g., 4 or 8b")
 } else {
-  (async () => {
-    const loadedPages = [];
-    let nextPageData = {};
-    for await (const page of tractatePages(tractates.indexOf(tractate) + 1, startDaf || '2')) {
-      loadedPages.push(page);
-      if (loadedPages.length >= 2) {
-        const { tractate, daf } = loadedPages[loadedPages.length - 2];
-        console.log(tractate, daf);
-        const pair = loadedPages.slice(-2).map(processPage);
-        const { merged, next } = await mergePage(tractate, daf, pair[0], pair[1], nextPageData);
-        nextPageData = next;
-        merged.dateProcessed = Date.now();
-        await writeFile(`../output/${page.tractate}-${page.daf}.json`, JSON.stringify(merged));
-      }
+  for await (const page of tractatePages(tractates.indexOf(tractate) + 1, startDaf || '2')) {
+    const { tractate, daf } = page;
+    const { main, rashi, tosafot } = processPage(page);
+    const merged = await mergeMain(tractate, daf, main);
+    const output = {
+      main: merged,
+      rashi: rashi.join("<br>"),
+      tosafot: tosafot.join("<br>"),
     }
-  })();
+    await writeFile(`../output/${page.tractate}-${page.daf}.json`, JSON.stringify(output));
+  }
+}
+
+async function mergeAllThree() {
+  const loadedPages = [];
+  let nextPageData = {};
+  for await (const page of tractatePages(tractates.indexOf(tractate) + 1, startDaf || '2')) {
+    loadedPages.push(page);
+    if (loadedPages.length >= 2) {
+      const { tractate, daf } = loadedPages[loadedPages.length - 2];
+      console.log(tractate, daf);
+      const pair = loadedPages.slice(-2).map(processPage);
+      const { merged, next } = await mergePage(tractate, daf, pair[0], pair[1], nextPageData);
+      nextPageData = next;
+      merged.dateProcessed = Date.now();
+      await writeFile(`../output/${page.tractate}-${page.daf}.json`, JSON.stringify(merged));
+    }
+  }
 }

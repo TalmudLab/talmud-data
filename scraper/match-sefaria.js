@@ -7,7 +7,7 @@ const textURI = (tractate, daf, type) => {
   if (!daf.includes("b")) daf += "a";
   switch (type) {
     case "main":
-      return 'https://www.sefaria.org/api/texts/' + tractate + '.' + daf + '?vhe=Wikisource_Talmud_Bavli';
+      return 'https://www.sefaria.org/api/texts/' + tractate + '.' + daf + '?vhe=William_Davidson_Edition_-_Aramaic';
     case "rashi":
       return 'https://www.sefaria.org/api/texts/Rashi_on_' + tractate + '.' + daf + '.1-100' + '?';
     case "tosafot":
