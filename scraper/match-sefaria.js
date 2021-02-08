@@ -64,15 +64,37 @@ function diffsToString(diffs) {
   return merged;
 }
 
-function mergeCommentary(sefariaLines, hbLines) {
-  const hbString = hbLines.join(lineSep)
+function mergeCommentary(sefariaLines, hbLines, nextHb, prevMerged) {
+  const hbToString = lines => lines.join(lineSep)
     .replace(/\]\[/g, "")
     .replace(/\]\s+\[/g, " ")
     .replaceAll("[ ", " [")
     .replaceAll(" ]", "] ")
-    .replaceAll(" :", ":")
+    .replaceAll(" :", ":");
+  let hbString = hbToString(hbLines);
   let hbIndex = 0;
-  const merged = [];
+  if (prevMerged.length) {
+    let prevString = prevMerged.flat().join("");
+    //would this always work?
+    const adjust = hbString.indexOf(prevString.slice(-5));
+    hbIndex += adjust;
+  }
+  //Remove the preview word
+  const pageEndIndex = hbString.lastIndexOf(":");
+  const preview = hbString.slice(pageEndIndex + 1).replace(lineSep, "");
+  hbString = hbString.slice(0, pageEndIndex + 1);
+  //Add the next amud's HebrewBooks lines, in case they're needed
+  const pageEndMarker = "%";
+  if (nextHb.length) {
+    const nextString = hbToString(nextHb);
+    if (!nextString.substr(0, nextString.indexOf(" ")).includes(preview)) {
+      throw new Error("Preview word doesn't match first word on next amud");
+    }
+    hbString += pageEndMarker + nextString;
+  }
+  const merged = prevMerged || [];
+  const next = [];
+  let writeToNextPage = false;
   sefariaLines.forEach((line, index) => {
       process.stdout.write(`Comment #${index + 1} `.green);
       const split = line.split(/[-–—]/g).map(str => str.trim());
@@ -99,13 +121,20 @@ function mergeCommentary(sefariaLines, hbLines) {
         process.stdout.write(["Header ", "Comment "][index])
         let headerLength = substring.length;
         if (hbIndex != 0) {
-          // there's either a space or a line break between each block
-          if (hbString[hbIndex] == " ") {
-            hbIndex++;
-          } else if (hbString.substr(hbIndex, lineSep.length) == lineSep) {
-            headerLength += lineSep.length;
-          } else {
-            throw new Error("Unexpected comment divisor")
+          /* there's either a space, line break, or page break between each block
+            Treat this for-loop as a nicer switch statement.
+            If the loop gets to the null at the end of the array, none of the
+            separators were found.
+           */
+          const separators = [" ", lineSep, pageEndMarker, null];
+          for (const sep of separators) {
+            if (sep == null)
+              throw new Error("Unexpected comment divisor")
+            if (sep == pageEndMarker) writeToNextPage = true;
+            if (hbString.substr(hbIndex, sep.length) == sep) {
+              hbIndex += sep.length;
+              break;
+            }
           }
         }
         if (index == 0) {
@@ -189,14 +218,22 @@ function mergeCommentary(sefariaLines, hbLines) {
         //   }
         // }
         const merged = diffsToString(Diff.diffChars(substring, hbSubstring));
-        currMerged.push(merged);
+        const pageBreakSplit = merged.split(pageEndMarker);
+        if (pageBreakSplit.length == 2) {
+          const nextPageStart = pageBreakSplit[1];
+          next.push(nextPageStart);
+          writeToNextPage = true;
+        }
+        currMerged.push(pageBreakSplit[0]);
         hbIndex += headerLength;
-
       })
-      merged.push(currMerged);
+      if (writeToNextPage)
+        next.push(currMerged);
+      else
+        merged.push(currMerged);
     }
   )
-  return merged;
+  return { merged, next }
 }
 
 function merge(sefariaLines, hbLines) {
@@ -254,10 +291,10 @@ function checkForException(tractate, daf, text, sefariaLines, hbLines) {
   return {sefaria: sefariaLines, hb: hbLines};
 }
 
-async function mergeText(tractate, daf, text, hbLines) {
+async function mergeText(tractate, daf, text, hbLines, nextHb, prev) {
   const {hebrew} = await getText(tractate, daf, text);
   const {sefaria, hb} = checkForException(tractate, daf, text, hebrew, hbLines)
-  return text == "main" ? merge(sefaria, hb) : mergeCommentary(sefaria, hb);
+  return text == "main" ? merge(sefaria, hb) : mergeCommentary(sefaria, hb, nextHb, prev);
 }
 
 //Leave these as three separate functions for now
@@ -266,14 +303,14 @@ async function mergeMain(tractate, daf, mainLines) {
   return await mergeText(tractate, daf, "main", mainLines)
 }
 
-async function mergeRashi(tractate, daf, rashiLines) {
+async function mergeRashi(tractate, daf, rashiLines, nextLines, prevData) {
   console.log(tractate, daf, "Rashi");
-  return await mergeText(tractate, daf, "rashi", rashiLines)
+  return await mergeText(tractate, daf, "rashi", rashiLines, nextLines, prevData)
 }
 
-async function mergeTosafot(tractate, daf, tosafotLines) {
+async function mergeTosafot(tractate, daf, tosafotLines, nextLines, prevData) {
   console.log(tractate, daf, "Tosafot");
-  return await mergeText(tractate, daf, "tosafot", tosafotLines)
+  return await mergeText(tractate, daf, "tosafot", tosafotLines, nextLines, prevData)
 }
 
 export {mergeMain, mergeRashi, mergeTosafot}

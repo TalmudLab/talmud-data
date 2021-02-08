@@ -58,7 +58,7 @@ function linesArray(html) {
 }
 
 
-async function processPage(page) {
+function processPage(page) {
   const $ = cheerio.load(page.body);
 
   const replaceSpans = divSelector => {
@@ -87,18 +87,32 @@ async function processPage(page) {
   const mainLines = linesArray($('.shastext2').html());
   const rashiLines = linesArray($(".shastext3").html());
   const tosafotLines = linesArray($(".shastext4").html());
-  const main = await mergeMain(page.tractate, page.daf, mainLines);
-  let tosafot, rashi;
-  if (tosafotLines.length)
-    tosafot = await mergeTosafot(page.tractate, page.daf, tosafotLines);
-  if (rashiLines.length)
-    rashi = await mergeRashi(page.tractate, page.daf, rashiLines);
-  const output = {
-    main,
-    ...rashi && {rashi},
-    ...tosafot && {tosafot},
+
+  return {
+    main: mainLines,
+    rashi: rashiLines,
+    tosafot: tosafotLines
   }
-  return output;
+}
+
+async function mergePage(tractate, daf, lines, nextLines, prevData) {
+  const main = await mergeMain(tractate, daf, lines.main);
+  let tosafot, rashi;
+  if (lines.tosafot.length)
+    tosafot = await mergeTosafot(tractate, daf, lines.tosafot, nextLines.tosafot, prevData?.tosafot || []);
+  if (lines.rashi.length)
+    rashi = await mergeRashi(tractate, daf, lines.rashi, nextLines.rashi, prevData?.rashi || []);
+
+  const merged = {
+    main,
+    ...rashi && {rashi: rashi.merged},
+    ...tosafot && {tosafot: tosafot.merged},
+  }
+  const next = {
+    ...rashi?.next?.length && {rashi: rashi.next},
+    ...tosafot?.next?.length && {tosafot: tosafot.next}
+  }
+  return { merged, next };
 }
 
 //the first element in argv is the node executable, the second is the index.js file
@@ -122,11 +136,19 @@ if (!tractate || !tractates.includes(tractate)) {
   console.error ("Second argument must be valid daf, e.g., 4 or 8b")
 } else {
   (async () => {
+    const loadedPages = [];
+    let nextPageData = {};
     for await (const page of tractatePages(tractates.indexOf(tractate) + 1, startDaf || '2')) {
-      console.log(page.tractate, page.daf);
-      const output = await processPage(page);
-      output.dateProcessed = Date.now();
-      await writeFile(`../output/${page.tractate}-${page.daf}.json`, JSON.stringify(output));
+      loadedPages.push(page);
+      if (loadedPages.length >= 2) {
+        const { tractate, daf } = loadedPages[loadedPages.length - 2];
+        console.log(tractate, daf);
+        const pair = loadedPages.slice(-2).map(processPage);
+        const { merged, next } = await mergePage(tractate, daf, pair[0], pair[1], nextPageData);
+        nextPageData = next;
+        merged.dateProcessed = Date.now();
+        await writeFile(`../output/${page.tractate}-${page.daf}.json`, JSON.stringify(merged));
+      }
     }
   })();
 }
