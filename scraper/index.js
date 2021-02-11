@@ -1,5 +1,5 @@
 import cheerio from "cheerio";
-import tractates from "./tractates.js";
+import tractates from "../model/tractates.js";
 import { get } from "./http.js";
 import { mergeMain, mergeTosafot, mergeRashi } from "./match-sefaria.js";
 import { writeFile } from "fs/promises";
@@ -144,6 +144,7 @@ if (!tractate || !tractates.includes(tractate)) {
       rashi: rashi.join("<br>"),
       tosafot: tosafot.join("<br>"),
     }
+    output.dateProcessed = Date.now();
     await writeFile(`../output/${page.tractate}-${page.daf}.json`, JSON.stringify(output));
   }
 }
