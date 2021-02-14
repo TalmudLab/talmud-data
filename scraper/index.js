@@ -3,8 +3,7 @@ import tractates from "../model/tractates.js";
 import { get } from "./http.js";
 import { mergeMain, mergeTosafot, mergeRashi } from "./match-sefaria.js";
 import { writeFile } from "fs/promises";
-
-const uri = (mesechta, daf) => `https://hebrewbooks.org/shas.aspx?mesechta=${mesechta}&daf=${daf}&format=text`;
+import { remoteUri as uri } from "../config.js";
 
 async function loadPage(tractateIndex, daf) {
   const body = await get(uri(tractateIndex, daf));

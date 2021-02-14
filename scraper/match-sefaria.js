@@ -55,7 +55,7 @@ function diffsToString(diffs) {
         add += "{";
       merged += add;
       if (!add && part.value.trim()) {
-        process.stdout.write(`Removed ${part.value} from Hebrew Books\n`.red)
+        process.stdout.write(`Removed ${part.value} from remote\n`.red)
       }
     } else {
       merged += part.value;
@@ -214,7 +214,7 @@ function mergeCommentary(sefariaLines, hbLines, nextHb, prevMerged) {
         //   if (unexpectedChange.removed) {
         //     console.warn(`Removed ${unexpectedChange.value} from Sefaria`);
         //   } else {
-        //     console.warn(`Removed ${unexpectedChange.value} from Hebrew Books`)
+        //     console.warn(`Removed ${unexpectedChange.value} from remote`)
         //   }
         // }
         const merged = diffsToString(Diff.diffChars(substring, hbSubstring));
@@ -260,7 +260,7 @@ function merge(sefariaLines, hbLines) {
       //   add += "[";
       merged += part.value.trim();
       // if (!add && part.value.trim()) {
-      //   process.stdout.write(`Removed ${part.value} from Hebrew Books\n`.red)
+      //   process.stdout.write(`Removed ${part.value} from remote\n`.red)
       // }
     } else {
       merged += part.value;
