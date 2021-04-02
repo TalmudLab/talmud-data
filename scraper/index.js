@@ -83,7 +83,16 @@ function processPage(page) {
   }
 
   [".shastext2", ".shastext3", ".shastext4"].forEach(replaceSpans);
-  const mainLines = linesArray($('.shastext2').html());
+
+  let mainHTML = $('.shastext2').html().trim();
+  if (mainHTML == "") {
+    const parent = $('.shastext2').parent();
+    parent.children("legend, div").remove();
+    replaceSpans(parent);
+    mainHTML = parent.html();
+  }
+
+  const mainLines = linesArray(mainHTML);
   const rashiLines = linesArray($(".shastext3").html());
   const tosafotLines = linesArray($(".shastext4").html());
 
@@ -119,13 +128,11 @@ const args = process.argv.slice(2);
 const tractate = args[0];
 const startDaf = args[1];
 const validDaf = dafStr => { //TODO: Add check for tractate length
-  if (dafStr.length != 2 && dafStr.length != 1)
+  if (dafStr.length < 1) return false;
+  const num = Number.parseInt(dafStr);
+  if (!num) return false;
+  if (String(num).length !== dafStr.length && dafStr[dafStr.length - 1] != "b")
     return false;
-  if (Number.parseInt(dafStr[0]) == NaN)
-    return false;
-  if (dafStr[1] && dafStr[1] != 'b') {
-    return false;
-  }
   return true;
 }
 
