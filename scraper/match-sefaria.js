@@ -3,8 +3,8 @@ import * as Diff from "diff"
 import exceptions from "../exceptions/index.js";
 import colors from "colors";
 
-const textURI = (tractate, daf, type) => {
-  if (!daf.includes("b")) daf += "a";
+const textURI = (tractate, daf, type, both = false) => {
+  if (!daf.includes("b") && !both) daf += "a";
   switch (type) {
     case "main":
       return 'https://www.sefaria.org/api/texts/' + tractate + '.' + daf + '?vhe=William_Davidson_Edition_-_Aramaic';

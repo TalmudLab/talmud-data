@@ -4,14 +4,15 @@
   "description": "",
   "main": "index.js",
   "type": "module",
-  "scripts": {
-  },
+  "scripts": {},
   "author": "",
   "license": "ISC",
   "dependencies": {
     "cheerio": "^1.0.0-rc.5",
     "colors": "^1.4.0",
     "diff": "^5.0.0",
-    "request": "^2.88.2"
+    "request": "^2.88.2",
+    "string-similarity": "^4.0.4",
+    "string-similarity-js": "^2.1.2"
   }
 }
